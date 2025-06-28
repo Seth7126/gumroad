@@ -6,12 +6,18 @@ import { cast, createCast, is } from "ts-safe-cast";
 import { CreateProductData, RecurringProductType, createProduct } from "$app/data/products";
 import { ProductNativeType, ProductServiceType } from "$app/parsers/product";
 import { CurrencyCode, currencyCodeList, findCurrencyByCode } from "$app/utils/currency";
-import { RecurrenceId, recurrenceLabels, recurrenceIds } from "$app/utils/recurringPricing";
-import { assertResponseError } from "$app/utils/request";
+import {
+  RecurrenceId,
+  durationInMonthsToRecurrenceId,
+  recurrenceLabels,
+  recurrenceIds,
+} from "$app/utils/recurringPricing";
+import { assertResponseError, request } from "$app/utils/request";
 import { register } from "$app/utils/serverComponentUtil";
 
 import { Button, NavigationButton } from "$app/components/Button";
 import { Icon } from "$app/components/Icons";
+import { Popover } from "$app/components/Popover";
 import { showAlert } from "$app/components/server-components/Alert";
 import { TypeSafeOptionSelect } from "$app/components/TypeSafeOptionSelect";
 import { WithTooltip } from "$app/components/WithTooltip";
@@ -27,6 +33,8 @@ const NewProductPage = ({
   release_at_date,
   show_orientation_text,
   eligible_for_service_products,
+  ai_generation_enabled,
+  ai_promo_dismissed,
 }: {
   current_seller_currency_code: CurrencyCode;
   native_product_types: ProductNativeType[];
@@ -34,6 +42,8 @@ const NewProductPage = ({
   release_at_date: string;
   show_orientation_text: boolean;
   eligible_for_service_products: boolean;
+  ai_generation_enabled: boolean;
+  ai_promo_dismissed: boolean;
 }) => {
   const formUID = React.useId();
 
@@ -48,9 +58,97 @@ const NewProductPage = ({
   const [productType, setProductType] = useState<ProductNativeType>("digital");
   const [subscriptionDuration, setSubscriptionDuration] = useState<RecurrenceId | null>(null);
 
+  const [aiPromoVisible, setAiPromoVisible] = useState(ai_generation_enabled && !ai_promo_dismissed);
+  const [aiPopoverOpen, setAiPopoverOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGeneratingUsingAi, setIsGeneratingUsingAi] = useState(false);
+  const [description, setDescription] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+
   const isRecurringBilling = is<RecurringProductType>(productType);
 
   const selectedCurrency = findCurrencyByCode(currencyCode);
+
+  const dismissAiPromo = async () => {
+    try {
+      await request({
+        method: "POST",
+        url: Routes.settings_dismiss_ai_product_generation_promo_path(),
+        accept: "json",
+      });
+      setAiPromoVisible(false);
+    } catch (e) {
+      assertResponseError(e);
+      showAlert("Failed to dismiss promo", "error");
+    }
+  };
+
+  const generateWithAi = async () => {
+    if (aiPrompt.trim().length < 10) {
+      showAlert("Please enter a detailed prompt for your product idea with a price in mind", "error");
+      return;
+    }
+
+    setIsGeneratingUsingAi(true);
+    try {
+      const response = await request({
+        method: "POST",
+        url: Routes.internal_ai_product_details_generations_path(),
+        accept: "json",
+        data: { prompt: aiPrompt.trim() },
+      });
+
+      const result = cast<
+        | {
+            success: true;
+            data: {
+              name: string;
+              description: string;
+              summary: string;
+              price: number;
+              currency_code: CurrencyCode;
+              price_frequency_in_months: number | null;
+              native_type: ProductNativeType;
+            };
+          }
+        | {
+            success: false;
+            error: string;
+          }
+      >(await response.json());
+
+      if (result.success) {
+        const data = result.data;
+
+        setName(data.name);
+        setDescription(data.description);
+        setSummary(data.summary);
+        setProductType(data.native_type);
+        setPrice(data.price.toString());
+        setCurrencyCode(data.currency_code);
+        if (data.native_type === "membership" && data.price_frequency_in_months) {
+          const recurrenceId = durationInMonthsToRecurrenceId[data.price_frequency_in_months];
+          setSubscriptionDuration(recurrenceId || defaultRecurrence);
+        }
+
+        setAiPopoverOpen(false);
+        setAiPrompt("");
+
+        setAiPromoVisible(false);
+        // Dismiss the promo permanently since user has used AI
+        void dismissAiPromo();
+
+        showAlert("All set! Review the form below and hit 'Next: customize' to continue.", "success");
+      } else {
+        showAlert(result.error, "error");
+      }
+    } catch (e) {
+      assertResponseError(e);
+      showAlert("Failed to generate product details", "error");
+    } finally {
+      setIsGeneratingUsingAi(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -75,12 +173,15 @@ const NewProductPage = ({
           is_physical: productType === "physical",
           is_recurring_billing: isRecurringBilling,
           name,
+          description,
+          summary,
           native_type: productType,
           price_currency_type: currencyCode,
           price_range: price,
           release_at_date,
           release_at_time: "12PM",
           subscription_duration: isRecurringBilling ? subscriptionDuration || defaultRecurrence : null,
+          ai_prompt: aiPrompt.trim(),
         }),
       };
 
@@ -108,6 +209,54 @@ const NewProductPage = ({
             <Icon name="x-square" />
             <span>Cancel</span>
           </NavigationButton>
+          {ai_generation_enabled && (
+            <Popover
+              open={aiPopoverOpen}
+              onToggle={setAiPopoverOpen}
+              trigger={
+                <Button color="primary" outline>
+                  <Icon name="lighting-fill" />
+                </Button>
+              }
+            >
+              <div style={{ width: "24rem", maxWidth: "100%" }}>
+                <fieldset>
+                  <legend>Create a product with AI</legend>
+                  <p>
+                    Got an idea? Give clear instructions, and let AI create your product—quick and easy! Customize it to
+                    make it yours.
+                  </p>
+                  <textarea
+                    placeholder="e.g., a 'Coding with AI using Cursor for Designers' ebook with 5 chapters for $35'."
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={4}
+                    style={{ width: "100%", resize: "vertical" }}
+                    autoFocus
+                  />
+                </fieldset>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--spacer-2)",
+                    justifyContent: "flex-end",
+                    marginTop: "var(--spacer-3)",
+                  }}
+                >
+                  <Button onClick={() => setAiPopoverOpen(false)} disabled={isGeneratingUsingAi}>
+                    Cancel
+                  </Button>
+                  <Button
+                    color="primary"
+                    onClick={() => void generateWithAi()}
+                    disabled={isGeneratingUsingAi || !aiPrompt.trim()}
+                  >
+                    {isGeneratingUsingAi ? "Generating..." : "Generate"}
+                  </Button>
+                </div>
+              </div>
+            </Popover>
+          )}
           <Button color="accent" type="submit" form={`new-product-form-${formUID}`} disabled={isSubmitting}>
             {isSubmitting ? "Adding..." : "Next: Customize"}
           </Button>
@@ -127,6 +276,44 @@ const NewProductPage = ({
               </p>
             </header>
 
+            {ai_generation_enabled && aiPromoVisible && (
+              <div
+                style={{
+                  backgroundColor: "#f3e8ff",
+                  border: "1px solid #d8b4fe",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  marginBottom: "24px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                }}
+              >
+                <Icon name="lighting-fill" style={{ color: "#8b5cf6", marginTop: "2px" }} />
+                <div style={{ flex: 1 }}>
+                  <strong>New.</strong> You can create your product using AI now. Click the sparks button in the header
+                  to get started.{" "}
+                  <a href="#" style={{ textDecoration: "underline", color: "#8b5cf6" }}>
+                    Learn more
+                  </a>
+                </div>
+                <button
+                  onClick={() => void dismissAiPromo()}
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    textDecoration: "underline",
+                  }}
+                >
+                  close
+                </button>
+              </div>
+            )}
+
             <fieldset className={cx({ danger: errors.has("name") })}>
               <legend>
                 <label htmlFor={`name-${formUID}`}>Name</label>
@@ -137,6 +324,7 @@ const NewProductPage = ({
                 id={`name-${formUID}`}
                 type="text"
                 placeholder="Name of product"
+                value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                   errors.delete("name");

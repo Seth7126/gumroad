@@ -36,6 +36,8 @@ class ProductPresenter
       release_at_date:,
       show_orientation_text: current_seller.products.visible.none?,
       eligible_for_service_products: current_seller.eligible_for_service_products?,
+      ai_generation_enabled: Feature.active?(:ai_product_generation, current_seller),
+      ai_promo_dismissed: current_seller.dismissed_create_products_with_ai_promo_alert?,
     }
   end
 
