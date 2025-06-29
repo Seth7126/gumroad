@@ -127,8 +127,11 @@ class LinksController < ApplicationController
       @product.save!
 
       if params[:link][:ai_prompt].present?
-        generate_product_cover_and_thumbnail_using_ai
-        generate_product_content_using_ai
+        cover_thread = Thread.new { generate_product_cover_and_thumbnail_using_ai }
+        content_thread = Thread.new { generate_product_content_using_ai }
+
+        cover_thread.join
+        content_thread.join
       end
     rescue ActiveRecord::RecordNotSaved, ActiveRecord::RecordInvalid, Link::LinkInvalid
       @error_message = if @product&.errors&.any?
