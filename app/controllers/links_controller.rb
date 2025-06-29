@@ -126,7 +126,7 @@ class LinksController < ApplicationController
     begin
       @product.save!
 
-      if params[:link][:ai_prompt].present?
+      if params[:link][:ai_prompt].present? && Feature.active?(:ai_product_generation, current_seller)
         cover_thread = Thread.new { generate_product_cover_and_thumbnail_using_ai }
         content_thread = Thread.new { generate_product_content_using_ai }
 
