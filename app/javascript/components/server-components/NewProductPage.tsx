@@ -226,7 +226,7 @@ const NewProductPage = ({
               onToggle={setAiPopoverOpen}
               trigger={
                 <Button color="primary" outline>
-                  ✨
+                  <Icon name="sparkle" />
                 </Button>
               }
             >
