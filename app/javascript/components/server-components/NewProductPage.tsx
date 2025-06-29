@@ -1,4 +1,5 @@
 import cx from "classnames";
+import hands from "images/illustrations/hands.png";
 import * as React from "react";
 import { useState } from "react";
 import { cast, createCast, is } from "ts-safe-cast";
@@ -21,8 +22,6 @@ import { Popover } from "$app/components/Popover";
 import { showAlert } from "$app/components/server-components/Alert";
 import { TypeSafeOptionSelect } from "$app/components/TypeSafeOptionSelect";
 import { WithTooltip } from "$app/components/WithTooltip";
-
-import hands from "images/illustrations/hands.png";
 
 const nativeTypeIcons = require.context("$assets/images/native_types/");
 
@@ -220,7 +219,7 @@ const NewProductPage = ({
             <Icon name="x-square" />
             <span>Cancel</span>
           </NavigationButton>
-          {ai_generation_enabled && (
+          {ai_generation_enabled ? (
             <Popover
               open={aiPopoverOpen}
               onToggle={setAiPopoverOpen}
@@ -261,7 +260,7 @@ const NewProductPage = ({
                 </div>
               </div>
             </Popover>
-          )}
+          ) : null}
           <Button color="accent" type="submit" form={`new-product-form-${formUID}`} disabled={isSubmitting}>
             {isSubmitting ? "Adding..." : "Next: Customize"}
           </Button>
