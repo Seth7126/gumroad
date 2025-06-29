@@ -17,6 +17,10 @@ class Ai::ProductDetailsGeneratorService
   MAX_NUMBER_OF_CONTENT_PAGES_TO_GENERATE = 6
   DEFAULT_NUMBER_OF_CONTENT_PAGES_TO_GENERATE = 4
 
+  ALLOWED_CURRENCY_CODES = [
+    "usd", "gbp", "eur", "jpy", "inr", "aud", "cad", "hkd", "sgd", "twd", "nzd", "brl", "zar", "chf", "ils", "php", "krw", "pln", "czk"
+  ].freeze
+
   MAX_PROMPT_LENGTH = 500
 
   def initialize(current_seller:)
@@ -30,10 +34,13 @@ class Ai::ProductDetailsGeneratorService
   #   - summary: [String] The product summary
   #   - native_type: [String] The product native type
   #   - number_of_content_pages: [Integer] The number of content pages to generate
-  #   - price: [Float] The product price in the current seller's currency
+  #   - price: [Float] The product price
+  #   - currency_code: [String] The product price currency code
   #   - price_frequency_in_months: [Integer] The product price frequency in months (1, 3, 6, 12, 24)
   #   - duration_in_seconds: [Integer] The duration of the operation in seconds
   def generate_product_details(prompt:)
+    raise "Prompt is blank" if prompt.to_s.strip.blank?
+
     result, duration = with_retries(operation: "Generate product details", context: prompt) do
       response = openai_client(PRODUCT_DETAILS_GENERATION_TIMEOUT_IN_SECONDS).chat(
         parameters: {
@@ -43,6 +50,14 @@ class Ai::ProductDetailsGeneratorService
               role: "system",
               content: %Q{
                 You are an expert digital product creator. Generate detailed product information based on the user's prompt.
+
+                IMPORTANT: Carefully extract price and currency information from the user's prompt:
+                - Look for explicit prices like "for 2 yen", "$10", "€15", "£20", etc.
+                - Common currency mappings: "yen" = "jpy", "dollar"/"$" = "usd", "euro"/"€" = "eur", "pound"/"£" = "gbp"
+                - Allowed currency codes: #{ALLOWED_CURRENCY_CODES.join(", ")}
+                - If no price is specified, use your best guess based on the product type
+                - If no currency is specified, use the seller's default currency: #{current_seller.currency_type}
+
                 Return the following JSON format **only**:
                 {
                   "name": "Product name as a string",
@@ -50,7 +65,8 @@ class Ai::ProductDetailsGeneratorService
                   "description": "Product description as a safe HTML string with only <p>, <ul>, <ol>, <li>, <h2>, <h3>, <h4>, <strong>, and <em> tags; feel free to add emojis. Don't mention the number of pages or chapters in the description.",
                   "summary": "Short summary of the product",
                   "native_type": "Must be one of: #{SUPPORTED_PRODUCT_NATIVE_TYPES.join(", ")}",
-                  "price": 4.99, // Price in #{current_seller.currency_type}
+                  "price": 4.99, // Extract the exact price from the prompt if specified, otherwise use your best guess
+                  "currency_code": "usd", // Extract currency from prompt if specified, otherwise use seller default (#{current_seller.currency_type})
                   "price_frequency_in_months": 1 // Only include if native_type is 'membership' (1, 3, 6, 12, 24)
                 }
               }.split("\n").map(&:strip).join("\n")
@@ -71,10 +87,7 @@ class Ai::ProductDetailsGeneratorService
       JSON.parse(content, symbolize_names: true)
     end
 
-    result.merge(
-      currency_code: current_seller.currency_type,
-      duration_in_seconds: duration
-    )
+    result.merge(duration_in_seconds: duration)
   end
 
   # @param product_name [String] The product name

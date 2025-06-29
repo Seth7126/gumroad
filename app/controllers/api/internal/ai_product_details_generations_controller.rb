@@ -26,7 +26,7 @@ class Api::Internal::AiProductDetailsGenerationsController < Api::Internal::Base
           summary: result[:summary],
           number_of_content_pages: result[:number_of_content_pages],
           price: result[:price],
-          currency_code: current_seller.currency_type,
+          currency_code: result[:currency_code],
           price_frequency_in_months: result[:price_frequency_in_months],
           native_type: result[:native_type],
           duration_in_seconds: result[:duration_in_seconds]

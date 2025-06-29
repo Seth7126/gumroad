@@ -109,7 +109,7 @@ const NewProductPage = ({
               description: string;
               summary: string;
               price: number;
-              currency_code: CurrencyCode;
+              currency_code: string;
               price_frequency_in_months: number | null;
               native_type: ProductNativeType;
               number_of_content_pages: number | null;
@@ -130,7 +130,9 @@ const NewProductPage = ({
         setProductType(data.native_type);
         setNumberOfContentPages(data.number_of_content_pages);
         setPrice(data.price.toString());
-        setCurrencyCode(data.currency_code);
+        if (is<CurrencyCode>(data.currency_code)) {
+          setCurrencyCode(data.currency_code);
+        }
         if (data.native_type === "membership" && data.price_frequency_in_months) {
           const recurrenceId = durationInMonthsToRecurrenceId[data.price_frequency_in_months];
           setSubscriptionDuration(recurrenceId || defaultRecurrence);
