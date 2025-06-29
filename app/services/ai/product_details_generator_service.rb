@@ -17,10 +17,6 @@ class Ai::ProductDetailsGeneratorService
   MAX_NUMBER_OF_CONTENT_PAGES_TO_GENERATE = 6
   DEFAULT_NUMBER_OF_CONTENT_PAGES_TO_GENERATE = 4
 
-  ALLOWED_CURRENCY_CODES = [
-    "usd", "gbp", "eur", "jpy", "inr", "aud", "cad", "hkd", "sgd", "twd", "nzd", "brl", "zar", "chf", "ils", "php", "krw", "pln", "czk"
-  ].freeze
-
   MAX_PROMPT_LENGTH = 500
 
   def initialize(current_seller:)
@@ -55,7 +51,7 @@ class Ai::ProductDetailsGeneratorService
                 - Look for explicit prices like "for 2 yen", "$10", "€15", "£20", etc.
                 - Always use the exact numerical value from the prompt without currency conversion
                 - Common currency mappings: "yen" = "jpy", "dollar"/"$" = "usd", "euro"/"€" = "eur", "pound"/"£" = "gbp"
-                - Allowed currency codes: #{ALLOWED_CURRENCY_CODES.join(", ")}
+                - Allowed currency codes: #{CURRENCY_CHOICES.keys.join(", ")}
                 - If no price is specified, use your best guess based on the product type
                 - If no currency is specified, use the seller's default currency: #{current_seller.currency_type}
 
