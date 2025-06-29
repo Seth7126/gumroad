@@ -22,6 +22,8 @@ import { showAlert } from "$app/components/server-components/Alert";
 import { TypeSafeOptionSelect } from "$app/components/TypeSafeOptionSelect";
 import { WithTooltip } from "$app/components/WithTooltip";
 
+import hands from "images/illustrations/hands.png";
+
 const nativeTypeIcons = require.context("$assets/images/native_types/");
 
 const defaultRecurrence: RecurrenceId = "monthly";
@@ -64,6 +66,7 @@ const NewProductPage = ({
   const [isGeneratingUsingAi, setIsGeneratingUsingAi] = useState(false);
   const [description, setDescription] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const [numberOfContentPages, setNumberOfContentPages] = useState<number | null>(null);
 
   const isRecurringBilling = is<RecurringProductType>(productType);
 
@@ -109,6 +112,7 @@ const NewProductPage = ({
               currency_code: CurrencyCode;
               price_frequency_in_months: number | null;
               native_type: ProductNativeType;
+              number_of_content_pages: number | null;
             };
           }
         | {
@@ -124,6 +128,7 @@ const NewProductPage = ({
         setDescription(data.description);
         setSummary(data.summary);
         setProductType(data.native_type);
+        setNumberOfContentPages(data.number_of_content_pages);
         setPrice(data.price.toString());
         setCurrencyCode(data.currency_code);
         if (data.native_type === "membership" && data.price_frequency_in_months) {
@@ -132,8 +137,6 @@ const NewProductPage = ({
         }
 
         setAiPopoverOpen(false);
-        setAiPrompt("");
-
         setAiPromoVisible(false);
         // Dismiss the promo permanently since user has used AI
         void dismissAiPromo();
@@ -181,6 +184,7 @@ const NewProductPage = ({
           release_at_date,
           release_at_time: "12PM",
           subscription_duration: isRecurringBilling ? subscriptionDuration || defaultRecurrence : null,
+          number_of_content_pages: numberOfContentPages,
           ai_prompt: aiPrompt.trim(),
         }),
       };
@@ -188,7 +192,12 @@ const NewProductPage = ({
       const responseData = await createProduct(requestData);
 
       if (responseData.success) {
-        window.location.href = responseData.redirect_to;
+        let redirectTo = responseData.redirect_to;
+        if (aiPrompt.trim().length > 0) {
+          redirectTo = `${redirectTo}#ai-generated`;
+        }
+
+        window.location.href = redirectTo;
       } else {
         showAlert(responseData.error_message, "error");
         setIsSubmitting(false);
@@ -215,11 +224,11 @@ const NewProductPage = ({
               onToggle={setAiPopoverOpen}
               trigger={
                 <Button color="primary" outline>
-                  <Icon name="lighting-fill" />
+                  ✨
                 </Button>
               }
             >
-              <div style={{ width: "24rem", maxWidth: "100%" }}>
+              <div className="w-96 max-w-full">
                 <fieldset>
                   <legend>Create a product with AI</legend>
                   <p>
@@ -231,18 +240,12 @@ const NewProductPage = ({
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     rows={4}
-                    style={{ width: "100%", resize: "vertical" }}
+                    maxLength={500}
+                    className="w-full resize-y"
                     autoFocus
                   />
                 </fieldset>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--spacer-2)",
-                    justifyContent: "flex-end",
-                    marginTop: "var(--spacer-3)",
-                  }}
-                >
+                <div className="mt-3 flex justify-end gap-2">
                   <Button onClick={() => setAiPopoverOpen(false)} disabled={isGeneratingUsingAi}>
                     Cancel
                   </Button>
@@ -276,43 +279,23 @@ const NewProductPage = ({
               </p>
             </header>
 
-            {ai_generation_enabled && aiPromoVisible && (
+            {ai_generation_enabled && aiPromoVisible ? (
               <div
-                style={{
-                  backgroundColor: "#f3e8ff",
-                  border: "1px solid #d8b4fe",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  marginBottom: "24px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                }}
+                role="status"
+                className="grid grid-cols-[auto_1fr_auto] items-start gap-4 rounded-lg !border-pink bg-pink/20 p-6"
               >
-                <Icon name="lighting-fill" style={{ color: "#8b5cf6", marginTop: "2px" }} />
-                <div style={{ flex: 1 }}>
+                <img src={hands} alt="Hands" className="h-12 w-12" />
+                <div>
                   <strong>New.</strong> You can create your product using AI now. Click the sparks button in the header
-                  to get started.{" "}
-                  <a href="#" style={{ textDecoration: "underline", color: "#8b5cf6" }}>
-                    Learn more
-                  </a>
+                  to get started.
+                  <br />
+                  <a data-helper-prompt="How do I create a product using AI?">Learn more</a>
                 </div>
-                <button
-                  onClick={() => void dismissAiPromo()}
-                  type="button"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#6b7280",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    textDecoration: "underline",
-                  }}
-                >
+                <button className="link !col-start-3 self-center" onClick={() => void dismissAiPromo()}>
                   close
                 </button>
               </div>
-            )}
+            ) : null}
 
             <fieldset className={cx({ danger: errors.has("name") })}>
               <legend>
