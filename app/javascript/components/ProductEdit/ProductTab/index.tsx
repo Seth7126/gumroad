@@ -6,6 +6,7 @@ import { recurrenceLabels, recurrenceIds } from "$app/utils/recurringPricing";
 import { CopyToClipboard } from "$app/components/CopyToClipboard";
 import { useCurrentSeller } from "$app/components/CurrentSeller";
 import CustomDomain from "$app/components/CustomDomain";
+import { Icon } from "$app/components/Icons";
 import { Layout, useProductUrl } from "$app/components/ProductEdit/Layout";
 import { ProductPreview } from "$app/components/ProductEdit/ProductPreview";
 import { AttributesEditor } from "$app/components/ProductEdit/ProductTab/AttributesEditor";
@@ -36,7 +37,6 @@ import { useProductEditContext } from "$app/components/ProductEdit/state";
 import { ToggleSettingRow } from "$app/components/SettingRow";
 import { Toggle } from "$app/components/Toggle";
 import { TypeSafeOptionSelect } from "$app/components/TypeSafeOptionSelect";
-import { Icon } from "$app/components/Icons";
 
 export const ProductTab = () => {
   const uid = React.useId();
