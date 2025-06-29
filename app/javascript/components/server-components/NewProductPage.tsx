@@ -283,7 +283,7 @@ const NewProductPage = ({
                 role="status"
                 className="grid grid-cols-[auto_1fr_auto] items-start gap-4 rounded-lg !border-pink bg-pink/20 p-6"
               >
-                <img src={hands} alt="Hands" className="h-12 w-12" />
+                <img src={hands} alt="Hands" className="h-12 w-12 self-center" />
                 <div>
                   <strong>New.</strong> You can create your product using AI now. Click the sparks button in the header
                   to get started.
