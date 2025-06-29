@@ -61,7 +61,6 @@ export const ProductTab = () => {
   const [thumbnail, setThumbnail] = React.useState(initialThumbnail);
   const [showAiNotification, setShowAiNotification] = React.useState(false);
 
-  // Check for AI-generated hash and show notification
   React.useEffect(() => {
     if (window.location.hash === "#ai-generated") {
       setShowAiNotification(true);

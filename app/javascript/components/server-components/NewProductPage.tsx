@@ -139,8 +139,6 @@ const NewProductPage = ({
 
         setAiPopoverOpen(false);
         setAiPromoVisible(false);
-        // Dismiss the promo permanently since user has used AI
-        void dismissAiPromo();
 
         showAlert("All set! Review the form below and hit 'Next: customize' to continue.", "success");
       } else {
