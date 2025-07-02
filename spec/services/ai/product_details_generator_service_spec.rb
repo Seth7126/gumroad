@@ -147,7 +147,8 @@ describe Ai::ProductDetailsGeneratorService, :vcr do
                                                             "text" =>
                                                             "In this section, we will cover the foundational concepts of Ruby, including variables, data types, and control structures." }] }])
         expect(result[:pages].last["title"]).to eq("Getting Started with Ruby")
-        expect(result[:pages].last["content"]).to eq([{ "type" => "heading", "attrs" => { "level" => 2 }, "content" => [{ "type" => "text", "text" => "Setting Up Your Environment" }] },
+        expect(result[:pages].last["content"]).to eq([
+                                                       { "type" => "heading", "attrs" => { "level" => 2 }, "content" => [{ "type" => "text", "text" => "Setting Up Your Environment" }] },
                                                        { "type" => "paragraph",
                                                          "content" =>
                                                          [{ "type" => "text",

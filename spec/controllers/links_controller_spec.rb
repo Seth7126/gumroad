@@ -3184,11 +3184,11 @@ describe LinksController, :vcr do
           allow(Ai::ProductDetailsGeneratorService).to receive(:new).and_return(service_double)
           allow(service_double).to receive(:generate_cover_image).and_return({ image_data: "fake_image_data" })
           allow(service_double).to receive(:generate_rich_content_pages).and_return({
-            pages: [
-              { "title" => "Introduction", "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Welcome to the course" }] }] },
-              { "title" => "Conclusion", "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Thank you for reading this course" }] }] }
-            ]
-          })
+                                                                                      pages: [
+                                                                                        { "title" => "Introduction", "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Welcome to the course" }] }] },
+                                                                                        { "title" => "Conclusion", "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Thank you for reading this course" }] }] }
+                                                                                      ]
+                                                                                    })
           allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_return(nil)
           allow_any_instance_of(Link).to receive_message_chain(:asset_previews, :build).and_return(nil)
           allow_any_instance_of(Link).to receive(:build_thumbnail).and_return(nil)
