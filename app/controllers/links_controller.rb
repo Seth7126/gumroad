@@ -127,11 +127,7 @@ class LinksController < ApplicationController
       @product.save!
 
       if params[:link][:ai_prompt].present? && Feature.active?(:ai_product_generation, current_seller)
-        cover_thread = Thread.new { generate_product_cover_and_thumbnail_using_ai }
-        content_thread = Thread.new { generate_product_content_using_ai }
-
-        cover_thread.join
-        content_thread.join
+        generate_product_details_using_ai
       end
     rescue ActiveRecord::RecordNotSaved, ActiveRecord::RecordInvalid, Link::LinkInvalid
       @error_message = if @product&.errors&.any?
@@ -702,6 +698,19 @@ class LinksController < ApplicationController
       return if [Link::NATIVE_TYPE_COFFEE, Link::NATIVE_TYPE_BUNDLE].include?(@product.native_type)
 
       @product.toggle_community_chat!(enabled)
+    end
+
+    def generate_product_details_using_ai
+      if Rails.env.test?
+        generate_product_cover_and_thumbnail_using_ai
+        generate_product_content_using_ai
+      else
+        cover_thread = Thread.new { generate_product_cover_and_thumbnail_using_ai }
+        content_thread = Thread.new { generate_product_content_using_ai }
+
+        cover_thread.join
+        content_thread.join
+      end
     end
 
     def generate_product_cover_and_thumbnail_using_ai

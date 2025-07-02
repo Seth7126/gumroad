@@ -44,4 +44,64 @@ describe UserPolicy do
       expect(subject).not_to permit(seller_context, seller)
     end
   end
+
+  permissions :generate_product_details_with_ai? do
+    context "when ai_product_generation feature is active" do
+      before do
+        Feature.activate_user(:ai_product_generation, seller)
+      end
+
+      it "grants access to owner" do
+        seller_context = SellerContext.new(user: seller, seller:)
+        expect(subject).to permit(seller_context, seller)
+      end
+
+      it "grants access to accountant" do
+        seller_context = SellerContext.new(user: accountant_for_seller, seller:)
+        expect(subject).to permit(seller_context, seller)
+      end
+
+      it "grants access to admin" do
+        seller_context = SellerContext.new(user: admin_for_seller, seller:)
+        expect(subject).to permit(seller_context, seller)
+      end
+
+      it "grants access to marketing" do
+        seller_context = SellerContext.new(user: marketing_for_seller, seller:)
+        expect(subject).to permit(seller_context, seller)
+      end
+
+      it "grants access to support" do
+        seller_context = SellerContext.new(user: support_for_seller, seller:)
+        expect(subject).to permit(seller_context, seller)
+      end
+    end
+
+    context "when ai_product_generation feature is inactive" do
+      it "denies access to owner" do
+        seller_context = SellerContext.new(user: seller, seller:)
+        expect(subject).not_to permit(seller_context, seller)
+      end
+
+      it "denies access to accountant" do
+        seller_context = SellerContext.new(user: accountant_for_seller, seller:)
+        expect(subject).not_to permit(seller_context, seller)
+      end
+
+      it "denies access to admin" do
+        seller_context = SellerContext.new(user: admin_for_seller, seller:)
+        expect(subject).not_to permit(seller_context, seller)
+      end
+
+      it "denies access to marketing" do
+        seller_context = SellerContext.new(user: marketing_for_seller, seller:)
+        expect(subject).not_to permit(seller_context, seller)
+      end
+
+      it "denies access to support" do
+        seller_context = SellerContext.new(user: support_for_seller, seller:)
+        expect(subject).not_to permit(seller_context, seller)
+      end
+    end
+  end
 end

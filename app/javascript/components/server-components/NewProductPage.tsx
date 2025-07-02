@@ -222,19 +222,22 @@ const NewProductPage = ({
               open={aiPopoverOpen}
               onToggle={setAiPopoverOpen}
               trigger={
-                <Button color="primary" outline>
+                <Button color="primary" outline aria-label="Create a product with AI">
                   <Icon name="sparkle" />
                 </Button>
               }
             >
               <div className="w-96 max-w-full">
                 <fieldset>
-                  <legend>Create a product with AI</legend>
+                  <legend>
+                    <label htmlFor={`ai-prompt-${formUID}`}>Create a product with AI</label>
+                  </legend>
                   <p>
                     Got an idea? Give clear instructions, and let AI create your product—quick and easy! Customize it to
                     make it yours.
                   </p>
                   <textarea
+                    id={`ai-prompt-${formUID}`}
                     placeholder="e.g., a 'Coding with AI using Cursor for Designers' ebook with 5 chapters for $35'."
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
