@@ -280,11 +280,21 @@ Rails.application.routes.draw do
     get "/privacy", to: "home#privacy"
     get "/taxes", to: redirect("/pricing", status: 301)
     get "/hackathon", to: "home#hackathon"
+    get "/small-bets", to: "home#small_bets"
     resource :github_stars, only: [:show]
 
     namespace :gumroad_blog, path: "blog" do
       root to: "posts#index"
       resources :posts, only: [:index, :show], param: :slug, path: "p"
+    end
+
+    namespace :help_center, path: "help" do
+      root to: "articles#index"
+
+      # Custom singular `path` name for backwards compatibility with old routes
+      # for SEO.
+      resources :articles, only: [:index, :show], param: :slug, path: "article"
+      resources :categories, only: [:show], param: :slug, path: "category"
     end
 
     get "/ifttt/v1/status" => "api/v2/users#ifttt_status"
@@ -958,6 +968,10 @@ Rails.application.routes.draw do
     post "/sns-aws-config-webhook", to: "foreign_webhooks#sns_aws_config"
     post "/grmc-webhook", to: "foreign_webhooks#grmc"
     post "/resend-webhook", to: "foreign_webhooks#resend"
+
+    # secure redirect
+    get "/secure_url_redirect", to: "secure_redirect#new", as: :secure_url_redirect
+    post "/secure_url_redirect", to: "secure_redirect#create"
 
     # TODO (chris): review and replace usage of routes below with UserCustomDomainConstraint routes
     get "/:username", to: "users#show", as: "user"

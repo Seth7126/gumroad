@@ -3,10 +3,10 @@
 class Exports::PurchaseExportService
   PURCHASE_FIELDS = [
     "Purchase ID", "Item Name", "Buyer Name", "Purchase Email", "Buyer Email", "Do not contact?",
-    "Purchase Date", "Purchase Time (UTC timezone)", "Subtotal ($)", "Taxes ($)", "Shipping ($)",
+    "Purchase Date", "Purchase Time (UTC timezone)", "Subtotal ($)", "Taxes ($)", "Tax Type", "Shipping ($)",
     "Sale Price ($)", "Fees ($)", "Net Total ($)", "Tip ($)", "Tax Included in Price?",
     "Street Address", "City", "Zip Code", "State", "Country", "Referrer", "Refunded?",
-    "Partial Refund ($)", "Fully Refunded?", "Disputed?", "Dispute Won?", "Variants",
+    "Partial Refund ($)", "Fully Refunded?", "Disputed?", "Dispute Won?", "Access Revoked?", "Variants",
     "Discount Code", "Recurring Charge?", "Free trial purchase?", "Pre-order authorization?", "Product ID", "Order Number",
     "Pre-order authorization time (UTC timezone)", "Custom Fields", "Item Price ($)",
     "Variants Price ($)", "Giftee Email", "SKU ID", "Quantity", "Recurrence",
@@ -137,6 +137,7 @@ class Exports::PurchaseExportService
         "Purchase Time (UTC timezone)" => purchase.created_at.to_time.to_s,
         "Subtotal ($)" => purchase.sub_total,
         "Taxes ($)" => purchase.tax_dollars,
+        "Tax Type" => purchase.has_tax_label? ? purchase.tax_label(include_tax_rate: false) : "",
         "Shipping ($)" => purchase.shipping_dollars,
         "Sale Price ($)" => purchase.price_dollars,
         "Fees ($)" => purchase.fee_dollars,
@@ -154,6 +155,7 @@ class Exports::PurchaseExportService
         "Fully Refunded?" => purchase.stripe_refunded ? 1 : 0,
         "Disputed?" => purchase.chargeback_date ? 1 : 0,
         "Dispute Won?" => purchase.chargeback_reversed? ? 1 : 0,
+        "Access Revoked?" => purchase.is_access_revoked ? 1 : 0,
         "Variants" => purchase.variants_list,
         "Discount Code" => purchase.offer_code&.code,
         "Recurring Charge?" => purchase.is_recurring_subscription_charge ? 1 : 0,
