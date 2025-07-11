@@ -424,7 +424,7 @@ class Country
       1
     when Compliance::Countries::ALB.alpha2
       # 33 USD as-of this comment
-      3000
+      300000
     when Compliance::Countries::AZE.alpha2
       # 30 USD as-of this comment
       50
