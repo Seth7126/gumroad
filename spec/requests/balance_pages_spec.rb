@@ -628,9 +628,9 @@ describe "Balance Pages Scenario", js: true, type: :feature do
             expect(page).to have_text("You can request instant payouts 24/7, including weekends and holidays. Funds typically appear in your bank account within 30 minutes, though some payouts may take longer to be credited.")
             expect(page).to have_select("Pay out balance up to", selected: Date.current.strftime("%B %-d, %Y"))
             expect(page).to have_text("Sent to Bank of America", normalize_ws: true)
-            expect(page).to have_text("Amount $10", normalize_ws: true)
-            expect(page).to have_text("Instant payout fee (3%) -$0.30", normalize_ws: true)
-            expect(page).to have_text("You'll receive $9.70", normalize_ws: true)
+            expect(page).to have_text("Amount $3,500", normalize_ws: true)
+            expect(page).to have_text("Instant payout fee (3%) -$101.95", normalize_ws: true)
+            expect(page).to have_text("You'll receive $3,398.05", normalize_ws: true)
             click_on "Cancel"
           end
           expect(page).to_not have_modal("Instant payout")
