@@ -25,7 +25,7 @@ describe CreateIndiaSalesReportJob do
 
   it "defaults to previous month when no parameters provided" do
     travel_to(Time.zone.local(2023, 6, 15)) do
-      allow_any_instance_of(described_class).to receive(:perform).with(5, 2023)
+      expect_any_instance_of(described_class).to receive(:perform).with(5, 2023).and_call_original
       described_class.new.perform
     end
   end
@@ -74,7 +74,7 @@ describe CreateIndiaSalesReportJob do
           stripe_transaction_id: "txn_test456"
         )
         vat_purchase.mark_test_successful!
-        create(:purchase_sales_tax_info, purchase: vat_purchase, business_vat_id: "GST123456789")
+        vat_purchase.business_vat_id = "GST123456789"
 
         refunded_purchase = create(:purchase,
           link: product,
