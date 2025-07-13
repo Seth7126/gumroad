@@ -25,9 +25,9 @@ describe CreateIndiaSalesReportJob do
 
   it "defaults to previous month when no parameters provided" do
     travel_to(Time.zone.local(2023, 6, 15)) do
-      job = described_class.new
-      expect(job).to receive(:perform).with(5, 2023).and_call_original
-      job.perform
+      allow_any_instance_of(described_class).to receive(:perform).and_call_original
+      expect_any_instance_of(described_class).to receive(:perform).with(5, 2023)
+      described_class.new.perform
     end
   end
 
