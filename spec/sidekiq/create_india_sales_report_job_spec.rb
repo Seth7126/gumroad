@@ -31,7 +31,7 @@ describe CreateIndiaSalesReportJob do
     end
   end
 
-  describe "happy case" do
+  describe "happy case", :vcr do
     let(:s3_bucket_double) do
       s3_bucket_double = double
       allow(Aws::S3::Resource).to receive_message_chain(:new, :bucket).and_return(s3_bucket_double)
@@ -76,6 +76,7 @@ describe CreateIndiaSalesReportJob do
         )
         vat_purchase.mark_test_successful!
         vat_purchase.business_vat_id = "GST123456789"
+        vat_purchase.save!
 
         refunded_purchase = create(:purchase,
                                    link: product,
@@ -88,7 +89,8 @@ describe CreateIndiaSalesReportJob do
                                    stripe_transaction_id: "txn_test789"
         )
         refunded_purchase.mark_test_successful!
-        refunded_purchase.refund_purchase!(FlowOfFunds.build_simple_flow_of_funds(Currency::USD, 1000), nil)
+        refunded_purchase.stripe_refunded = true
+        refunded_purchase.save!
       end
     end
 
@@ -144,32 +146,35 @@ describe CreateIndiaSalesReportJob do
     end
 
     it "handles invalid Indian states" do
-      invalid_state_purchase = create(:purchase,
-                                      link: create(:product, price_cents: 500),
-                                      purchaser: create(:user),
-                                      purchase_state: "in_progress",
-                                      quantity: 1,
-                                      perceived_price_cents: 500,
-                                      country: "India",
-                                      ip_country: "India",
-                                      ip_state: "123",
-                                      stripe_transaction_id: "txn_invalid_state"
-      )
-      invalid_state_purchase.mark_test_successful!
+      travel_to(Time.zone.local(2023, 6, 15)) do
+        invalid_state_purchase = create(:purchase,
+                                        link: create(:product, price_cents: 500),
+                                        purchaser: create(:user),
+                                        purchase_state: "in_progress",
+                                        quantity: 1,
+                                        perceived_price_cents: 500,
+                                        country: "India",
+                                        ip_country: "India",
+                                        ip_state: "123",
+                                        stripe_transaction_id: "txn_invalid_state"
+        )
+        invalid_state_purchase.mark_test_successful!
 
-      expect(s3_bucket_double).to receive(:object).and_return(@s3_object)
+        expect(s3_bucket_double).to receive(:object).and_return(@s3_object)
 
-      described_class.new.perform(6, 2023)
+        described_class.new.perform(6, 2023)
 
-      temp_file = Tempfile.new("actual-file", encoding: "ascii-8bit")
-      @s3_object.get(response_target: temp_file)
-      temp_file.rewind
-      actual_payload = CSV.read(temp_file)
+        temp_file = Tempfile.new("actual-file", encoding: "ascii-8bit")
+        @s3_object.get(response_target: temp_file)
+        temp_file.rewind
+        actual_payload = CSV.read(temp_file)
 
-      invalid_state_row = actual_payload.find { |row| row[0] == invalid_state_purchase.external_id }
-      expect(invalid_state_row[2]).to eq("")
+        invalid_state_row = actual_payload.find { |row| row[0] == invalid_state_purchase.external_id }
+        expect(invalid_state_row).to be_present
+        expect(invalid_state_row[2]).to eq("")
 
-      temp_file.close(true)
+        temp_file.close(true)
+      end
     end
   end
 end
