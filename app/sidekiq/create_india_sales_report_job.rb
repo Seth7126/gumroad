@@ -41,15 +41,14 @@ class CreateIndiaSalesReportJob
                 .where("price_cents > 0")
                 .where("purchase_sales_tax_infos.business_vat_id IS NULL OR purchase_sales_tax_infos.business_vat_id = ''")
                 .find_each do |purchase|
-
-          next if purchase.purchase_state == 'failed'
+          next if purchase.purchase_state == "failed"
           next if purchase.chargeback_date.present? && !purchase.chargeback_reversed?
           next if purchase.fully_refunded?
 
           price_cents = purchase.price_cents
           tax_amount_cents = purchase.gumroad_tax_cents || 0
-          
-          raw_state = (purchase.ip_state || '').strip.upcase
+
+          raw_state = (purchase.ip_state || "").strip.upcase
           display_state = if raw_state.match?(/^\d+$/) || !VALID_INDIAN_STATES.include?(raw_state)
             ""
           else
