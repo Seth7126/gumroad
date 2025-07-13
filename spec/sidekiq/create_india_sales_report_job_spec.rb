@@ -43,48 +43,48 @@ describe CreateIndiaSalesReportJob do
 
     before do
       Feature.activate(:collect_tax_in)
-      
+
       create(:zip_tax_rate, country: "IN", state: nil, zip_code: nil, combined_rate: 0.18, is_seller_responsible: false)
 
       test_time = Time.zone.local(2023, 6, 15)
       product = create(:product, price_cents: 1000)
 
       travel_to(test_time) do
-        @india_purchase = create(:purchase, 
-          link: product, 
-          purchaser: product.user, 
-          purchase_state: "in_progress",
-          quantity: 1, 
-          perceived_price_cents: 1000, 
-          country: "India", 
-          ip_country: "India",
-          ip_state: "MH",
-          stripe_transaction_id: "txn_test123"
+        @india_purchase = create(:purchase,
+                                 link: product,
+                                 purchaser: product.user,
+                                 purchase_state: "in_progress",
+                                 quantity: 1,
+                                 perceived_price_cents: 1000,
+                                 country: "India",
+                                 ip_country: "India",
+                                 ip_state: "MH",
+                                 stripe_transaction_id: "txn_test123"
         )
         @india_purchase.mark_test_successful!
 
         vat_purchase = create(:purchase,
-          link: product,
-          purchaser: product.user,
-          purchase_state: "in_progress",
-          quantity: 1,
-          perceived_price_cents: 1000,
-          country: "India",
-          ip_country: "India",
-          stripe_transaction_id: "txn_test456"
+                              link: product,
+                              purchaser: product.user,
+                              purchase_state: "in_progress",
+                              quantity: 1,
+                              perceived_price_cents: 1000,
+                              country: "India",
+                              ip_country: "India",
+                              stripe_transaction_id: "txn_test456"
         )
         vat_purchase.mark_test_successful!
         vat_purchase.business_vat_id = "GST123456789"
 
         refunded_purchase = create(:purchase,
-          link: product,
-          purchaser: product.user,
-          purchase_state: "in_progress",
-          quantity: 1,
-          perceived_price_cents: 1000,
-          country: "India",
-          ip_country: "India",
-          stripe_transaction_id: "txn_test789"
+                                   link: product,
+                                   purchaser: product.user,
+                                   purchase_state: "in_progress",
+                                   quantity: 1,
+                                   perceived_price_cents: 1000,
+                                   country: "India",
+                                   ip_country: "India",
+                                   stripe_transaction_id: "txn_test789"
         )
         refunded_purchase.mark_test_successful!
         refunded_purchase.refund_purchase!(FlowOfFunds.build_simple_flow_of_funds(Currency::USD, 1000), nil)
@@ -93,7 +93,7 @@ describe CreateIndiaSalesReportJob do
 
     it "generates CSV report for India sales" do
       expect(s3_bucket_double).to receive(:object).and_return(@s3_object)
-      
+
       described_class.new.perform(6, 2023)
 
       expect(SlackMessageWorker).to have_enqueued_sidekiq_job("payments", "India Sales Reporting", anything, "green")
@@ -104,21 +104,21 @@ describe CreateIndiaSalesReportJob do
       actual_payload = CSV.read(temp_file)
 
       expect(actual_payload[0]).to eq([
-        "ID",
-        "Date", 
-        "Place of Supply (State)",
-        "Zip Tax Rate (%) (Rate from Database)",
-        "Taxable Value (cents)",
-        "Integrated Tax Amount (cents)",
-        "Tax Rate (%) (Calculated From Tax Collected)",
-        "Expected Tax (cents, rounded)",
-        "Expected Tax (cents, floored)",
-        "Tax Difference (rounded)",
-        "Tax Difference (floored)"
-      ])
+                                        "ID",
+                                        "Date",
+                                        "Place of Supply (State)",
+                                        "Zip Tax Rate (%) (Rate from Database)",
+                                        "Taxable Value (cents)",
+                                        "Integrated Tax Amount (cents)",
+                                        "Tax Rate (%) (Calculated From Tax Collected)",
+                                        "Expected Tax (cents, rounded)",
+                                        "Expected Tax (cents, floored)",
+                                        "Tax Difference (rounded)",
+                                        "Tax Difference (floored)"
+                                      ])
 
       expect(actual_payload.length).to eq(2)
-      
+
       data_row = actual_payload[1]
       expect(data_row[0]).to eq(@india_purchase.external_id)
       expect(data_row[2]).to eq("MH")
@@ -130,7 +130,7 @@ describe CreateIndiaSalesReportJob do
 
     it "excludes purchases with business VAT ID" do
       expect(s3_bucket_double).to receive(:object).and_return(@s3_object)
-      
+
       described_class.new.perform(6, 2023)
 
       temp_file = Tempfile.new("actual-file", encoding: "ascii-8bit")
@@ -144,20 +144,20 @@ describe CreateIndiaSalesReportJob do
 
     it "handles invalid Indian states" do
       invalid_state_purchase = create(:purchase,
-        link: create(:product, price_cents: 500),
-        purchaser: create(:user),
-        purchase_state: "in_progress",
-        quantity: 1,
-        perceived_price_cents: 500,
-        country: "India",
-        ip_country: "India",
-        ip_state: "123",
-        stripe_transaction_id: "txn_invalid_state"
+                                      link: create(:product, price_cents: 500),
+                                      purchaser: create(:user),
+                                      purchase_state: "in_progress",
+                                      quantity: 1,
+                                      perceived_price_cents: 500,
+                                      country: "India",
+                                      ip_country: "India",
+                                      ip_state: "123",
+                                      stripe_transaction_id: "txn_invalid_state"
       )
       invalid_state_purchase.mark_test_successful!
 
       expect(s3_bucket_double).to receive(:object).and_return(@s3_object)
-      
+
       described_class.new.perform(6, 2023)
 
       temp_file = Tempfile.new("actual-file", encoding: "ascii-8bit")
