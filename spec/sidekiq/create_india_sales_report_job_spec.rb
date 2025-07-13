@@ -75,8 +75,7 @@ describe CreateIndiaSalesReportJob do
                               stripe_transaction_id: "txn_test456"
         )
         vat_purchase.mark_test_successful!
-        vat_purchase.business_vat_id = "GST123456789"
-        vat_purchase.save!
+        vat_purchase.create_purchase_sales_tax_info!(business_vat_id: "GST123456789")
 
         refunded_purchase = create(:purchase,
                                    link: product,
@@ -147,9 +146,10 @@ describe CreateIndiaSalesReportJob do
 
     it "handles invalid Indian states" do
       travel_to(Time.zone.local(2023, 6, 15)) do
+        invalid_product = create(:product, price_cents: 500)
         invalid_state_purchase = create(:purchase,
-                                        link: create(:product, price_cents: 500),
-                                        purchaser: create(:user),
+                                        link: invalid_product,
+                                        purchaser: invalid_product.user,
                                         purchase_state: "in_progress",
                                         quantity: 1,
                                         perceived_price_cents: 500,
