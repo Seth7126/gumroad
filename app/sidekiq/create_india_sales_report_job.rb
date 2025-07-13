@@ -43,7 +43,7 @@ class CreateIndiaSalesReportJob
                 .find_each do |purchase|
           next if purchase.purchase_state == "failed"
           next if purchase.chargeback_date.present? && !purchase.chargeback_reversed?
-          next if purchase.fully_refunded?
+          next if purchase.stripe_refunded.present? && purchase.stripe_refunded > 0
 
           price_cents = purchase.price_cents
           tax_amount_cents = purchase.gumroad_tax_cents || 0
