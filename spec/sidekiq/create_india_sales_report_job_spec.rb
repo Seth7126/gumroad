@@ -25,8 +25,22 @@ describe CreateIndiaSalesReportJob do
 
   it "defaults to previous month when no parameters provided" do
     travel_to(Time.zone.local(2023, 6, 15)) do
-      allow_any_instance_of(described_class).to receive(:perform).and_call_original
-      expect_any_instance_of(described_class).to receive(:perform).with(5, 2023)
+      # Mock S3 to prevent real API calls
+      s3_bucket_double = double
+      s3_object_double = double
+      allow(Aws::S3::Resource).to receive_message_chain(:new, :bucket).and_return(s3_bucket_double)
+      allow(s3_bucket_double).to receive(:object).and_return(s3_object_double)
+      allow(s3_object_double).to receive(:upload_file)
+      allow(s3_object_double).to receive(:presigned_url).and_return("https://example.com/test-url")
+      
+      # Mock Slack notification
+      allow(SlackMessageWorker).to receive(:perform_async)
+      
+      # Mock database queries to prevent actual data access
+      allow(Purchase).to receive_message_chain(:joins, :where, :find_each).and_return([])
+      
+      # Test that it calls perform with previous month parameters
+      expect_any_instance_of(described_class).to receive(:perform).with(5, 2023).and_call_original
       described_class.new.perform
     end
   end
