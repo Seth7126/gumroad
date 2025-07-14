@@ -1,0 +1,36 @@
+{
+    "name": "Gumroad Dev Environment (Debian)",
+    "image": "mcr.microsoft.com/devcontainers/ruby:0-3.1-bullseye",
+    "features": {
+        "ghcr.io/devcontainers/features/mysql:1": {
+            "version": "8.0",
+            "password": "password"
+        },
+        "ghcr.io/devcontainers/features/redis:1": {},
+        "ghcr.io/devcontainers/features/mongodb:1": {
+            "version": "5.0"
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "lts"
+        }
+    },
+    "forwardPorts": [ 3000, 9200, 8080 ],
+    "portsAttributes": {
+        "3000": { "label": "Rails App", "onAutoForward": "openBrowser" },
+        "9200": { "label": "Elasticsearch" },
+        "8080": { "label": "AnyCable-Go" }
+    },
+    // **关键修复**: 在运行 setup.sh 之前，先加载 nvm 环境，确保 node/npm/corepack 可用
+    "postCreateCommand": "source /usr/local/share/nvm/nvm.sh && bash .devcontainer/setup.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Shopify.ruby-lsp",
+                "KoichiSasada.vscode-rdbg",
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint"
+            ]
+        }
+    },
+    "remoteUser": "vscode"
+}
